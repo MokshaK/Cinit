@@ -23,22 +23,6 @@ These files install into `~/.claude/`. Claude Code reads `~/.claude/CLAUDE.md` a
 
 Clone the repo, then run the installer for your platform.
 
-**Windows (PowerShell):**
-
-```powershell
-git clone <your-repo-url> $env:USERPROFILE\dotclaude
-cd $env:USERPROFILE\dotclaude
-.\install.ps1
-```
-
-**macOS / Linux:**
-
-```bash
-git clone <your-repo-url> ~/dotclaude
-cd ~/dotclaude
-./install.sh
-```
-
 The installer copies `CLAUDE.md` and the `templates/` tree into `~/.claude/`, backing up any existing files first.
 
 ## Update workflow
