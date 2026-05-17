@@ -8,7 +8,37 @@ desktop.ini
 .idea/
 *.swp
 *.swo
+*~
+.#*
 
 # Local-only experiments
 scratch/
 *.local.md
+
+# Python (hooks/run_tests.py is Python)
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Backups / temp
+*.bak
+*.tmp
+*.orig
+
+# Defensive: Claude Code runtime state directories.
+# These live in ~/.claude/ at runtime and the install script never writes them
+# back into the source tree, but ignoring at repo root keeps things clean in
+# the rare case Cinit gets cloned somewhere unexpected.
+/backups/
+/file-history/
+/ide/
+/sessions/
+/session-env/
+/shell-snapshots/
+/projects/
+/plans/
+/mcp-needs-auth-cache.json
+/settings.local.json
