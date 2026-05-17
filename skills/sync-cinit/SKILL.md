@@ -1,7 +1,6 @@
 ---
 name: sync-cinit
-description: Sync the user's ~/.claude/ directory with the latest Cinit repo. Clones the repo if absent, pulls latest, then runs the platform-appropriate install script. Use when the user says "sync cinit", "update my rules", "pull latest cinit", or wants to bootstrap Claude rules on a new machine.
-disable-model-invocation: true
+description: Sync the user's ~/.claude/ directory with the latest Cinit repo. Clones the repo if absent, pulls latest, then runs the platform-appropriate install script. Use when the user explicitly asks to sync cinit, update Claude rules from cinit, pull latest cinit, or bootstrap Claude rules on a new machine.
 ---
 
 # Sync Cinit
