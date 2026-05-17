@@ -14,39 +14,53 @@
 
 ### Step 0 — Detection
 
-Run these four checks. Record yes/no for each:
+Run these five checks. Record yes/no for each:
 
 1. Does `docs/wiki/index.md` exist?
 2. Does `docs/wiki/log.md` exist?
-3. Do `docs/wiki/architecture/`, `docs/wiki/modules/`, and `docs/wiki/decisions/` all exist as directories?
-4. Does `CLAUDE.md` exist at the repository root?
+3. Does `docs/wiki/lessons.md` exist?
+4. Do `docs/wiki/architecture/`, `docs/wiki/modules/`, and `docs/wiki/decisions/` all exist as directories?
+5. Does `CLAUDE.md` exist at the repository root?
 
-**If all four answer YES:** the bootstrap is complete. Skip the rest of this section and proceed to §1 (Core Philosophy).
+**If all five answer YES:** the bootstrap is complete. Skip the rest of this section and proceed to §1 (Core Philosophy).
 
 **If any answer NO:** perform Steps 1–6 below, in order.
 
+> **Shell note.** Commands below are shown for **PowerShell** first (Windows default) and **bash** second (macOS / Linux / WSL). Pick the matching set; don't mix them.
+
 ### Step 1 — Create the directory structure
 
+PowerShell:
+```powershell
+New-Item -ItemType Directory -Force -Path docs/wiki/architecture, docs/wiki/modules, docs/wiki/decisions | Out-Null
+```
+
+bash:
 ```bash
 mkdir -p docs/wiki/architecture docs/wiki/modules docs/wiki/decisions
 ```
 
-PowerShell equivalent:
-```powershell
-New-Item -ItemType Directory -Force -Path docs/wiki/architecture, docs/wiki/modules, docs/wiki/decisions
-```
-
 ### Step 2 — Move the flat wiki pages into `docs/wiki/`
 
-Move only if the source file is at the root **and** the destination does not already exist (idempotency guard). Prefer `git mv` so version history follows the file; fall back to `mv` if the file isn't yet tracked:
+Move only if the source file is at the root **and** the destination does not already exist (idempotency guard). Prefer `git mv` so version history follows the file; fall back to `Move-Item` / `mv` if the file isn't yet tracked.
 
+PowerShell:
+```powershell
+foreach ($f in 'index.md','log.md','lessons.md') {
+  if ((Test-Path $f) -and -not (Test-Path "docs/wiki/$f")) {
+    git mv $f "docs/wiki/$f" 2>$null
+    if ($LASTEXITCODE -ne 0) { Move-Item $f "docs/wiki/$f" }
+  }
+}
+```
+
+bash:
 ```bash
-if [ -f index.md ] && [ ! -f docs/wiki/index.md ]; then
-  git mv index.md docs/wiki/index.md 2>/dev/null || mv index.md docs/wiki/index.md
-fi
-if [ -f log.md ] && [ ! -f docs/wiki/log.md ]; then
-  git mv log.md docs/wiki/log.md 2>/dev/null || mv log.md docs/wiki/log.md
-fi
+for f in index.md log.md lessons.md; do
+  if [ -f "$f" ] && [ ! -f "docs/wiki/$f" ]; then
+    git mv "$f" "docs/wiki/$f" 2>/dev/null || mv "$f" "docs/wiki/$f"
+  fi
+done
 ```
 
 > ⚠️ **Do NOT move `PROJECT_WIKI_SCHEMA.md`.** It stays at the repository root permanently — it is the spec, not a wiki page.
@@ -55,6 +69,13 @@ fi
 
 So `architecture/`, `modules/`, and `decisions/` survive into git even before they have content:
 
+PowerShell:
+```powershell
+'docs/wiki/architecture/.gitkeep','docs/wiki/modules/.gitkeep','docs/wiki/decisions/.gitkeep' |
+  ForEach-Object { New-Item -ItemType File -Force -Path $_ | Out-Null }
+```
+
+bash:
 ```bash
 touch docs/wiki/architecture/.gitkeep docs/wiki/modules/.gitkeep docs/wiki/decisions/.gitkeep
 ```
@@ -92,10 +113,22 @@ Follow the **Ingest Protocol** in `PROJECT_WIKI_SCHEMA.md` §3:
   and fix anything that no longer matches reality.
 - Wiki updates ride in the **same commit** as the code change.
 
+### When you (or the user) learn something the hard way:
+
+Append to `docs/wiki/lessons.md` per `PROJECT_WIKI_SCHEMA.md` §6. Capture
+threshold is loose during the project (anything that cost >30min or generated
+explicit feedback). Promotion to global rules happens at end-of-project via
+`/lessons-review`, not unilaterally.
+
 ### When asked to "lint the wiki":
 
 Run the six-pass Linting Operation in `PROJECT_WIKI_SCHEMA.md` §5 and produce
 a written report. Do not auto-edit pages without confirmation.
+
+### When asked to "review lessons":
+
+Run the Lessons Review Ritual in `PROJECT_WIKI_SCHEMA.md` §6. Propose
+promotions; never auto-edit global rules.
 
 ### Prime directive:
 
@@ -106,29 +139,23 @@ agents will trust it.
 
 If `CLAUDE.md` *already exists*, do **not** overwrite it. Instead, check whether it already contains a `## Wiki-First Workflow` section. If not, append the body of the block above (everything from `## Wiki-First Workflow` onward) to the existing file.
 
-### Step 5 — Append a bootstrap entry to `log.md`
+### Step 5 — Update the seed entry in `log.md`
 
-Add a new entry at the **top** of `docs/wiki/log.md` (above any existing entries), using today's actual date and the repository's actual name. Template:
+The flat `log.md` ships with a seed entry titled `## YYYY-MM-DD — Wiki bootstrapped`. Replace `YYYY-MM-DD` with today's actual date and append the repository's actual name to the title: `## 2026-05-17 — Wiki bootstrapped in my-cool-repo`. The body is already correct — do not rewrite it.
 
-```markdown
-## YYYY-MM-DD — Wiki bootstrapped in <repo-name>
-
-- Moved `index.md` and `log.md` from repo root into `docs/wiki/`.
-- Created `architecture/`, `modules/`, `decisions/` subdirectories.
-- Generated `CLAUDE.md` bridge file at repo root.
-- Wiki is now in skeletal state. **First Ingest pending** — see Appendix B of `PROJECT_WIKI_SCHEMA.md`.
-
-**Wiki pages updated:** `index.md`, `log.md`
-**Source files touched:** _none — bootstrap-only commit_
-**Related ADR:** _none_
-
----
-```
+If `log.md` already has any non-bootstrap entries above the seed entry (idempotency case: bootstrap was run, work was logged, you're re-running bootstrap), do **not** add another bootstrap entry — leave history alone.
 
 ### Step 6 — Verify and report
 
 Run a final structural check:
 
+PowerShell:
+```powershell
+Get-ChildItem docs/wiki/, docs/wiki/architecture, docs/wiki/modules, docs/wiki/decisions
+Get-ChildItem CLAUDE.md, PROJECT_WIKI_SCHEMA.md
+```
+
+bash:
 ```bash
 ls -la docs/wiki/ docs/wiki/architecture docs/wiki/modules docs/wiki/decisions
 ls -la CLAUDE.md PROJECT_WIKI_SCHEMA.md
@@ -150,10 +177,9 @@ Moved:
 Logged the bootstrap in docs/wiki/log.md.
 
 Next step: run the First Ingest (Appendix B of PROJECT_WIKI_SCHEMA.md).
-This walks the codebase, fills in the Content Map in index.md, drafts an
-architecture overview, creates one stub per top-level module, and backfills
-retroactive ADRs for any visible foundational decisions. Want me to do
-that now?
+The required minimum is small — fill in the "What This Project Is" block
+in index.md, write one-paragraph module pages for the top three packages,
+and log the completion. Want me to do that now?
 ```
 
 After bootstrap, the rest of this file (§1 onwards) becomes the live spec for ongoing wiki maintenance.
@@ -217,6 +243,7 @@ If you find yourself reaching tier 4 *without* having exhausted tiers 1–3, sto
 /docs/wiki/
 ├── index.md                    # Central hub. Content map. Entry point for every task.
 ├── log.md                      # Chronological record of architectural changes and ingests.
+├── lessons.md                  # Project-local lessons learned. Reviewed at project close (§6).
 ├── architecture/               # High-level system design.
 │   ├── overview.md             # The 30-second mental model of the system.
 │   ├── data-flow.md            # How data moves through the system end-to-end.
@@ -241,6 +268,12 @@ If you find yourself reaching tier 4 *without* having exhausted tiers 1–3, sto
 - Entries are append-only at the top; never edit historical entries except to fix factual errors (with a strikethrough + correction note).
 - **Archive policy.** When `log.md` exceeds ~500 lines, move entries older than 12 months into `log-archive-YYYY.md` (one file per archived year). Replace the moved entries in `log.md` with a single pointer line: `> Entries from <year> and earlier moved to [log-archive-YYYY.md](./log-archive-YYYY.md).` Archive files follow the same format but are read-only thereafter.
 
+#### `lessons.md` — the project-local lessons log
+- Append-only record of *what we learned the hard way* during this project. Format and capture criteria: see §6.
+- Captures incidents that cost real time/effort, generated user feedback, or required undoing work. Each entry includes the incident, root cause, project-local rule, and a `Generalizable?` field (`no` / `maybe` / `yes`) that gates downstream promotion.
+- **Not edited destructively.** Older entries may be marked `[resolved]` or `[superseded by ADR-NNNN]` but the original wording stays.
+- **Reviewed at project close** via the ritual in §6. Promotions to global rules are user-approved, never automatic.
+
 #### `architecture/*.md` — the design layer
 - One file per concern. Keep each focused; split when a file exceeds ~400 lines.
 - Required sections: **Purpose**, **Components**, **Data Flow** (where applicable), **Evidence Anchors**, **Related Decisions**.
@@ -253,14 +286,26 @@ If you find yourself reaching tier 4 *without* having exhausted tiers 1–3, sto
 
 #### `decisions/*.md` — ADRs
 - One decision per file. Numbering is sequential and never reused, even after a decision is superseded.
-- Required sections: **Status** (Proposed / Accepted / Superseded by NNNN / Deprecated), **Context**, **Decision**, **Consequences**, **Alternatives Considered** (including ones that *failed* — this is where institutional memory lives).
+- Required sections: **Status** (Proposed / Accepted / Superseded by NNNN / Deprecated / Observed), **Context**, **Decision**, **Consequences**, **Alternatives Considered** (including ones that *failed* — this is where institutional memory lives).
 - A superseded ADR is *not* deleted. It is marked superseded and the new ADR links back to it.
+- **Threshold for writing one:** if reversing this decision would take more than a day of work, or if the choice locks in a contract that other modules or external systems depend on, write an ADR. Trivial bugfixes, version bumps, and one-file refactors do not need one.
+- **Retroactive ADRs.** When backfilling for decisions made before the wiki existed, use `Status: Observed` (not `Accepted (retroactive)`). The **Alternatives Considered** section should explicitly state which parts of the rationale were reconstructed from git history vs. invented — invented rationale undermines the institutional-memory value of the ADR format.
 
 ---
 
 ## 3. The Ingest Protocol
 
 "Ingesting" = absorbing a code change into the wiki so the Compiled State stays in sync with reality. Run this protocol whenever you add a feature, refactor, fix a non-trivial bug, change a dependency, or alter system behavior.
+
+### Pre-Ingest Gate — tests must be green
+
+An ingest captures a *completed* code change. A change that leaves tests red is not complete.
+
+- **If the global `run_tests.py` hook is installed,** the gate is enforced structurally — the hook ran the suite after every edit and would have surfaced any failure. Run the full suite once more before logging, then proceed.
+- **If the hook is not installed** (or has been project-disabled), run the test command yourself before starting the workflow below. If anything is red, **stop**. Fix the code or revert. Re-run. Only then ingest.
+- **If the touched code has no tests at all,** decide now whether that's acceptable for this change. Trivial / exploratory: note it in the log entry. Production-path code: write a test before ingesting. A new test must fail before its implementation lands — a green-on-stub test is a tautology, not coverage.
+
+This gate exists because a wiki entry that says "shipped feature X" while X's tests are red is worse than no entry — it hides a known break behind documentation prose.
 
 ### The Workflow
 
@@ -290,6 +335,7 @@ If you find yourself reaching tier 4 *without* having exhausted tiers 1–3, sto
    - **Changed file path or moved file**: grep the wiki for the old path. Update every Evidence Anchor.
    For any hit, ask: *"Does this still match reality after my change?"* If not, fix it in the same commit. Do **not** leave the wiki in a contradictory state — a half-stale wiki is worse than no wiki, because future agents trust it.
 7. **Update `index.md`'s last-updated date** if you added new pages or restructured sections.
+8. **Append to `lessons.md` if the change taught you something.** Don't force it — only if a real lesson surfaced (an incident, a non-obvious gotcha, a corrected mistake). Capture criteria are in §6; the test is *"would I want to know this on a future project?"* Skip if the answer is no. Multiple lessons in one ingest are fine and common during hard debugging sessions.
 
 ### When NOT to ingest
 - Pure formatting changes, comment fixes, dependency version bumps with no behavior change, generated-file updates. These do not require wiki updates. (But if a dep bump *forces* code changes — e.g. a breaking API change — that *is* an ingest.)
@@ -305,18 +351,31 @@ The wiki only delivers value if it is *cheap to read* and *trustworthy*. These r
 
 ### Rule 1 — Evidence Anchors are mandatory
 
-Every non-trivial claim about the codebase must be followed by an Evidence Anchor: a pointer to the file (and line range, when stable) that backs the claim. Format:
+Every non-trivial claim about the codebase must be followed by an Evidence Anchor: a pointer to the source that backs the claim. There are two anchor formats — **prefer the symbol anchor in almost all cases.**
+
+**Symbol anchor (default).** Refer to a stable named entity in the file:
+
+```
+the `JwtVerifier` class in [`src/services/auth/jwt.py`](../../src/services/auth/jwt.py)
+the `validate_session()` function in [`src/services/auth/jwt.py`](../../src/services/auth/jwt.py)
+```
+
+Symbol anchors survive refactors. As long as the symbol still exists at the named path, the anchor is correct. Any reader (human or agent) can find it with a single grep.
+
+**Line-range anchor (fallback, use sparingly).** Only when:
+- The claim is about a specific block of code with no named symbol (e.g. a long inline expression, a section of a config file, a SQL DDL fragment).
+- The file is unusually stable — schema files, license headers, vendored snapshots.
 
 ```
 [`src/services/auth/jwt.py:L42-L78`](../../src/services/auth/jwt.py#L42-L78)
 ```
 
-This lets the next agent (or you, on a later turn) jump to raw source *only when needed*, instead of speculating or pre-loading the whole file.
+Line numbers shift on every insert above the anchor. Ranges drift as fast as single lines — they do not "degrade more gracefully." Plan for line-range anchors to rot within weeks on active files, and replace them with symbol anchors when the contradiction sweep catches the rot.
 
 **Anchor hygiene:**
-- Prefer ranges over single lines (`L42-L78` not `L42`) — line numbers shift, ranges degrade more gracefully.
-- For long-lived stable APIs, anchor to a function/class name in prose rather than line numbers: `the JwtVerifier class in src/auth/jwt.py`.
-- During the contradiction sweep (step 6 above), verify anchors still point at the right code.
+- One Evidence Anchor per claim is enough — don't stack three different ways to get to the same code.
+- During the contradiction sweep (Ingest Protocol §3 step 6), verify the symbol still exists at the named path. If it was renamed, update the anchor; if it was deleted, update or remove the claim.
+- An anchor that points at a file but not a symbol is the weakest form — acceptable for "see also" pointers, not for load-bearing claims.
 
 ### Rule 2 — Succinct but technically dense
 
@@ -329,14 +388,20 @@ If you can delete a sentence without losing a fact, delete it.
 
 ### Rule 3 — Page length budgets
 
-| Page type | Soft cap | Hard cap |
-|-----------|----------|----------|
-| `modules/*.md` | 200 lines | 400 lines |
-| `architecture/*.md` | 300 lines | 500 lines |
-| `decisions/*.md` | 150 lines | 300 lines |
-| `index.md` | 300 lines | 500 lines |
+The real constraint is **context-window economy**: when an agent reads a page, it should leave room for the source files the page anchors to. A 400-line module page that ships with 2,000 lines of anchored source is a 2,400-line read on what was supposed to be a "summary" lookup.
 
-When you hit the hard cap, **split the page** rather than truncate. A 400-line module page usually means the module itself should be split, or that two concerns are tangled in one file — flag this in `log.md`. For `index.md` specifically, if the Content Map dominates the page length, split the tables (Modules, Decisions) out into `content-map.md` and link from `index.md`.
+Rough budgets (treat as defaults, not laws):
+
+| Page type | Comfortable | Reconsider at |
+|-----------|-------------|---------------|
+| `modules/*.md` | ≤200 lines | ≥400 lines |
+| `architecture/*.md` | ≤300 lines | ≥500 lines |
+| `decisions/*.md` | ≤150 lines | ≥300 lines |
+| `index.md` | ≤300 lines | ≥500 lines |
+
+When a page crosses the "reconsider" threshold, **split rather than truncate**. A long module page usually means the module itself should be split, or that two concerns are tangled in one file — flag this in `log.md`. For `index.md`, if the Content Map dominates the page length, split the tables (Modules, Decisions) out into `content-map.md` and link from `index.md`.
+
+If you have a legitimate reason to keep a page longer (e.g. a single ADR whose Alternatives Considered section is genuinely the load-bearing institutional memory), note the reason at the top of the page and move on. Don't truncate facts to hit a number.
 
 ### Rule 4 — Cross-link liberally, duplicate sparingly
 
@@ -409,6 +474,90 @@ When the lint operation completes, post a single consolidated report grouped by 
 
 ---
 
+## 6. The Lessons Review Ritual
+
+The wiki captures *what* was built and *why*. The lessons log captures *what we learned the hard way doing it* — incidents, surprising failure modes, choices that aged badly. The ritual below turns those project-local lessons into either project archive material, durable user memories, or (rarely) global rules.
+
+### When to capture (intra-project, ongoing)
+
+Append to `lessons.md` whenever **at least one** of these is true:
+
+- An incident cost >30 minutes of wasted or redone work.
+- The user gave explicit corrective feedback ("no, don't do that") or surprising positive feedback ("yes, exactly — keep doing that").
+- A commit had to be undone, reverted, or hot-fixed within a session.
+- The agent caught and corrected its own mistake mid-task and the mistake would plausibly recur.
+- A user-perceived bug turned out to be runtime-state or premise issue — that's a lesson about diagnosis.
+
+Capture is **deliberately cheap**: write the entry quickly, don't agonize over wording. Filtering happens at review, not at capture.
+
+### Entry format
+
+Every lessons.md entry must include these fields. The `Generalizable?` field is load-bearing — it gates promotion downstream.
+
+```markdown
+## YYYY-MM-DD — Short title
+
+**Triggered by:** The concrete incident, not the abstraction. What happened, what was the symptom, how was it discovered.
+**Cost:** Time / effort / scope of impact. Be specific: "~45min retraced steps" beats "some time."
+**Root cause:** What conditions made this possible. Often different from the trigger.
+**Local rule (this project):** What to do next time *here*. Project-specific is fine.
+**Generalizable?:** `no` / `maybe` / `yes` — with one sentence on why.
+**Candidate global rule:** *(only if `yes` or `maybe`)* The rule drafted in CLAUDE.md voice. ≤3 sentences.
+```
+
+Skip the **Candidate global rule** field for `no` entries — they're project archive material from day one.
+
+### Promotion tiers
+
+A lesson lives in one of three states. Promotion is one-way per cycle.
+
+**Tier 1 — `lessons.md` (project-local).** Default state. No further action required.
+
+**Tier 2 — User memory (`~/.claude/projects/.../memory/feedback_*.md`).** Promoted at end-of-project review when:
+- The lesson was marked `Generalizable?: yes` or `maybe`, AND
+- Cost was real (saved >1 hour OR averted a shipping bug OR averted an incident), AND
+- The rule has a concrete trigger and concrete action, AND
+- It doesn't duplicate an existing memory or CLAUDE.md rule.
+
+**Tier 3 — Global CLAUDE.md.** Promoted from Tier 2 only when:
+- Confirmed in ≥2 separate projects or project archetypes, AND
+- Saves >1 hour per incident, AND
+- The "would I write this rule from scratch if it didn't exist?" gut check passes, AND
+- Either the global CLAUDE.md is under 250 lines, or this rule displaces a weaker existing rule.
+
+**Disqualifying at all tiers:**
+- Project-specific facts ("the FOO API requires X header").
+- Tool-version-specific patches ("Python 3.13.2 has bug Y").
+- Style preferences with no measured cost.
+- Anything that reduces to "be more careful."
+
+### The end-of-project ritual (`/lessons-review`)
+
+When invoked, the ritual:
+
+1. Reads `docs/wiki/lessons.md` in full.
+2. For each entry marked `Generalizable?: yes` or `maybe`:
+   - Presents the incident, the candidate global rule (in CLAUDE.md voice), and a conflict check against existing memories + CLAUDE.md sections.
+   - Suggests a tier (1/2/3) with reasoning.
+3. For each candidate, the user decides: **promote** / **revise then promote** / **keep at current tier** / **kill (not actually a lesson)**.
+4. On `promote` to Tier 2: agent drafts a `feedback_*.md` memory file, user reviews, then it's saved.
+5. On `promote` to Tier 3: agent drafts the CLAUDE.md edit (including which existing rule, if any, gets displaced), user reviews, then it's applied.
+6. **Auto-edits are forbidden.** The ritual proposes; the user confirms each change.
+
+### Annual growth budget
+
+Global CLAUDE.md should not grow by more than **5 new rules per year**. Hard cap, by convention. If you have a 6th candidate and you're at or over 250 lines, the candidate either displaces an existing rule or waits for the next cycle.
+
+If the budget feels tight, the bar at Tier 3 is too low — tighten the "would I write this from scratch?" check.
+
+### When to skip the ritual
+
+- Project ended in <1 week with no real friction. Lessons.md is empty or near-empty. Skip.
+- All lessons.md entries are marked `Generalizable?: no`. Skip; archive the file with the project.
+- You ran the ritual within the last 3 months on a related project. Defer until enough new material has accumulated.
+
+---
+
 ## Appendix A — Page Templates
 
 ### `modules/<n>.md` template
@@ -417,14 +566,13 @@ When the lint operation completes, post a single consolidated report grouped by 
 # Module: <n>
 
 **Path:** `src/path/to/module/`
-**Last verified:** YYYY-MM-DD
 
 ## Responsibility
 One paragraph. What does this module own? What does it explicitly *not* own?
 
 ## Public Interface
-- `functionA(args) -> ReturnType` — one-line description. [`path/file.ext:L10-L40`](...)
-- `ClassB` — one-line description. [`path/file.ext:L50-L120`](...)
+- `functionA(args) -> ReturnType` — one-line description. The `functionA` function in [`path/file.ext`](...)
+- `ClassB` — one-line description. The `ClassB` class in [`path/file.ext`](...)
 
 ## Dependencies
 - **Internal:** `modules/other-module.md`, `modules/third-module.md`
@@ -434,8 +582,8 @@ One paragraph. What does this module own? What does it explicitly *not* own?
 What state does this module own? Where is it stored? Who else can mutate it?
 
 ## Evidence Anchors
-- Entry point: [`src/path/main.ext:L1-L30`](...)
-- Core logic: [`src/path/core.ext:L50-L200`](...)
+- Entry point: the `main()` function in [`src/path/main.ext`](...)
+- Core logic: the `<ClassOrFunctionName>` symbol in [`src/path/core.ext`](...)
 - Tests: [`tests/path/test_core.ext`](...)
 
 ## Gotchas
@@ -445,13 +593,20 @@ What state does this module own? Where is it stored? Who else can mutate it?
 - [ADR-0007: Why we use a thread pool here](../decisions/0007-thread-pool.md)
 ```
 
+> No `Last verified` field. A date with no automation behind it is aspirational, not data — the contradiction sweep during each ingest (§3 step 6) is the verification mechanism that actually runs. If you want freshness signal, derive it from `git log -1 -- <anchored-file>` at lint time.
+
 ### `decisions/NNNN-<slug>.md` template
 
 ```markdown
 # ADR-NNNN: <title>
 
-**Status:** Proposed | Accepted | Superseded by ADR-MMMM | Deprecated
+**Status:** Proposed | Accepted | Superseded by ADR-MMMM | Deprecated | Observed
 **Date:** YYYY-MM-DD
+
+> **`Observed`** is for retroactive ADRs — decisions made before the wiki existed.
+> Mark every claim in **Alternatives Considered** as either *(from git history)*,
+> *(from code comments / docs)*, *(from user recall)*, or *(reconstructed)*.
+> Reconstructed rationale is honest speculation, not institutional memory.
 
 ## Context
 What problem are we solving? What forces are at play?
@@ -482,14 +637,21 @@ Leave this section empty (`_none_`) for new ADRs. Update it whenever the impleme
 
 When this schema is first applied to an existing codebase (after the Bootstrap Protocol has placed files correctly):
 
-1. Read the README and top-level directory structure.
-2. Update `index.md` with a real content map (replace the `TODO (first-ingest)` placeholders).
-3. Create one `modules/*.md` per top-level package/module — start with one paragraph each, expand on demand.
-4. Create `architecture/overview.md` and `architecture/data-flow.md` even if minimal.
-5. Backfill ADRs for any decision visible in the codebase that future agents will need to understand (choice of database, framework, deployment target, etc.). Mark these `Status: Accepted (retroactive)`.
-6. Append a `log.md` entry: `"YYYY-MM-DD — First Ingest complete."`
+**Required minimum (do these before declaring First Ingest complete):**
 
-The first ingest does not need to be exhaustive. It needs to be *usable*. Subsequent ingests will fill the gaps as code changes touch each area.
+1. Read the README and top-level directory structure.
+2. Fill in the "What This Project Is" block in `index.md` — replace placeholders with real values (project name, one-line description, language/framework, entry point, test command).
+3. Create one `modules/*.md` per **top-three** packages/modules (by size or importance) — one paragraph each, with a single Evidence Anchor pointing at the entry symbol.
+4. Append a `log.md` entry: `"YYYY-MM-DD — First Ingest complete."`
+5. Leave `lessons.md` empty — entries accumulate during the project, not at ingest time.
+
+**Optional, do as code-touching work brings you near each area:**
+
+5. Architecture pages (`overview.md`, `data-flow.md`) when you next touch a cross-cutting concern.
+6. Additional `modules/*.md` pages when you next edit a module that doesn't have one. Don't pre-build pages for code you haven't read; you'll just produce placeholders that lie by omission.
+7. **Retroactive ADRs.** Only backfill an ADR when (a) a current task depends on understanding a past decision and (b) the rationale is recoverable from git history, code comments, or explicit user recall. Use `Status: Observed` and mark which parts of the rationale were reconstructed vs. invented. Do **not** backfill speculatively to "complete" the wiki — invented rationale is worse than a missing ADR.
+
+The first ingest does not need to be exhaustive. It needs to be *usable*. Subsequent ingests fill the gaps as code changes touch each area. Resist the urge to mass-author placeholders — every `modules/*.md` you create without reading the module is a future drift-lint finding.
 
 ---
 

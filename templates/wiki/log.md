@@ -7,23 +7,21 @@
 
 ---
 
-## 2026-04-26 — Wiki initialized
+## YYYY-MM-DD — Wiki bootstrapped
 
-- Created `/docs/wiki/` directory with the schema-mandated structure.
-- Authored skeletal `index.md` and `log.md`.
-- Schema authored at repository root: [`PROJECT_WIKI_SCHEMA.md`](../../PROJECT_WIKI_SCHEMA.md).
-- `architecture/`, `modules/`, and `decisions/` subdirectories are reserved but empty pending the **First Ingest** (see Appendix B of the schema).
+- `/docs/wiki/` directory created with the schema-mandated structure.
+- Skeletal `index.md` and `log.md` in place; `architecture/`, `modules/`, `decisions/` subdirectories reserved.
+- First Ingest not yet run — see Appendix B of [`PROJECT_WIKI_SCHEMA.md`](../../PROJECT_WIKI_SCHEMA.md). Bootstrap protocol updates the date in this entry on first run.
 
 **Wiki pages updated:** `index.md`, `log.md`
-**Source files touched:** _none — documentation-only commit_
-**Related ADR:** _none yet_
-
-**Next action for the next agent:** Run the First Ingest. Walk the repository, populate the Content Map in `index.md`, draft `architecture/overview.md`, create one `modules/*.md` stub per top-level package, and backfill retroactive ADRs for any foundational decisions visible in the codebase. Append a new entry to this log when done.
+**Source files touched:** _none — bootstrap-only_
+**Related ADR:** _none_
 
 ---
 
 <!--
-ENTRY TEMPLATE — copy this block above the most recent entry when ingesting a change:
+ENTRY TEMPLATE — copy this block above the most recent entry when ingesting a change.
+Use symbol anchors (the `Foo` class in src/path/file.ext) where possible; line-range anchors only when no named symbol exists.
 
 ## YYYY-MM-DD — <one-line title>
 
@@ -32,7 +30,8 @@ ENTRY TEMPLATE — copy this block above the most recent entry when ingesting a 
 - Summary bullet 3
 
 **Wiki pages updated:** modules/foo.md, architecture/data-flow.md
-**Source files touched:** src/foo/bar.py:L42-L120, src/baz/qux.ts:L1-L50
+**Source files touched:** the `Bar` class in src/foo/bar.py, the `qux()` function in src/baz/qux.ts
+**Tests:** `<command>` ✅ green | <N> added | none required (doc-only)
 **Related ADR:** decisions/NNNN-slug.md (omit if none)
 
 ---
