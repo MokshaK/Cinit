@@ -1,0 +1,38 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/.claude/hooks/run_tests.py\"",
+            "timeout": 130
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'paplay /usr/share/sounds/freedesktop/stereo/message.oga 2>/dev/null || aplay -q /usr/share/sounds/alsa/Front_Left.wav 2>/dev/null || true'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'paplay /usr/share/sounds/freedesktop/stereo/complete.oga 2>/dev/null || aplay -q /usr/share/sounds/alsa/Side_Right.wav 2>/dev/null || true'"
+          }
+        ]
+      }
+    ]
+  }
+}
